@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+        <meta name="theme-color" content="#333">
+
+        <title>Lights Room</title>
+
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            html {
+                touch-action: manipulation;
+            }
+
+            body {
+                margin: 0;
+
+                overflow: hidden;
+
+                font-family: Monospace, sans-serif;
+
+                background-color: #333;
+                color: #fff;
+
+                -webkit-user-select: none;
+                   -moz-user-select: none;
+                        user-select: none;
+
+                overscroll-behavior: none;
+            }
+
+            footer {
+                .container {
+                    position: fixed;
+                    bottom: 0;
+
+                    width: 100%;
+
+                    margin: 0 0 1rem 0;
+
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+
+                    font-family: sans-serif;
+
+                    color: #fff;
+
+                    p {
+                        margin: 0;
+
+                        font-size: 0.75rem;
+                    }
+
+                    a {
+                        color: inherit;
+                    }
+                }
+            }
+        </style>
+
+        <script>
+            let getParam = (name = '', uri = window.location.href) => {
+                return (new URL(uri)).searchParams.get(name);
+            };
+        </script>
+
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "https://unpkg.com/three@0.152.2/build/three.module.js",
+                    "three/addons/": "https://unpkg.com/three@0.152.2/examples/jsm/"
+                }
+            }
+        </script>
+
+        <script type="module">
+            import * as THREE from 'three';
+
+            import Stats from 'three/addons/libs/stats.module.js';
+
+            import { OrbitControls            } from 'three/addons/controls/OrbitControls.js';
+            import { RectAreaLightHelper      } from 'three/addons/helpers/RectAreaLightHelper.js';
+            import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+
+            let renderer, scene, camera;
+            let stats, meshKnot;
+
+            let init = () => {
+                renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setAnimationLoop(animation);
+                document.body.appendChild(renderer.domElement);
+
+                camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+                camera.position.set(0, 5, - 15);
+
+                scene = new THREE.Scene();
+
+                RectAreaLightUniformsLib.init();
+
+                const colors = Array.from({ length: (getParam('num') ?? 5) }, () => Math.floor(Math.random() * 0xffffff));
+                const groupCount = 1;
+                const spacing = 5;
+
+                const totalCount = colors.length * groupCount;
+                const startX = -((totalCount - 1) / 2) * spacing;
+
+                for(let i = 0; i < totalCount; i++) {
+                    const color = colors[i % colors.length];
+                    const x = startX + i * spacing;
+
+                    const rectLight = new THREE.RectAreaLight(color, 5, 4, 10);
+                    rectLight.position.set(x, 5, 5);
+                    scene.add(rectLight);
+
+                    const helper = new RectAreaLightHelper(rectLight);
+                    scene.add(helper);
+                }
+
+                const geoFloor = new THREE.BoxGeometry(2000, 0.1, 2000);
+                const matStdFloor = new THREE.MeshStandardMaterial({ color: 0xbcbcbc, roughness: 0.1, metalness: 0 });
+                const mshStdFloor = new THREE.Mesh(geoFloor, matStdFloor);
+                scene.add(mshStdFloor);
+
+                const geoKnot = new THREE.TorusKnotGeometry(1.5, 0.5, 200, 16);
+                const matKnot = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0, metalness: 0 });
+                meshKnot = new THREE.Mesh(geoKnot, matKnot);
+                meshKnot.position.set(0, 5, 0);
+                scene.add(meshKnot);
+
+                const controls = new OrbitControls(camera, renderer.domElement);
+                controls.target.copy(meshKnot.position);
+                controls.update();
+
+                window.addEventListener('resize', onWindowResize);
+
+                stats = new Stats();
+                document.body.appendChild(stats.dom);
+            };
+
+            let onWindowResize = () => {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.aspect = (window.innerWidth / window.innerHeight);
+                camera.updateProjectionMatrix();
+            };
+
+            let animation = (time) => {
+                meshKnot.rotation.y = time / 1000;
+                renderer.render(scene, camera);
+                stats.update();
+            };
+
+            window.addEventListener('DOMContentLoaded', init);
+        </script>
+    </head>
+    <body>
+        <footer>
+            <div class="container">
+                <p>&copy; 2024 <a href="//github.com/kanaaa224/" target="_blank">kanaaa224</a>.</p>
+            </div>
+        </footer>
+    </body>
+</html>
